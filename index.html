@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcadia Scanner - Crypto Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .gradient-bg {
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            }
+            .chatbot-bg {
+                background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            }
+            .message-bubble-user {
+                @apply bg-blue-500 text-white rounded-tl-3xl rounded-tr-xl rounded-bl-xl;
+            }
+            .message-bubble-assistant {
+                @apply bg-gray-200 text-gray-800 rounded-tl-xl rounded-tr-3xl rounded-br-xl;
+            }
+            .message-actions {
+                @apply flex items-center space-x-2 pt-2 text-xs;
+            }
+            .message-action {
+                @apply cursor-pointer hover:opacity-75;
+            }
+            .pulsating-dots {
+                @apply flex space-x-1;
+            }
+            .pulsating-dots span {
+                @apply w-2 h-2 bg-gray-400 rounded-full;
+                animation: bounce 1.4s infinite ease-in-out;
+            }
+            .pulsating-dots span:nth-child(2) {
+                animation-delay: 0.2s;
+            }
+            .pulsating-dots span:nth-child(3) {
+                animation-delay: 0.4s;
+            }
+            @keyframes bounce {
+                0%, 80%, 100% { transform: scale(0); }
+                40% { transform: scale(1); }
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg font-sans">
+    <!-- Navigation -->
+    <header class="bg-white shadow-sm py-4 px-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-chart-line text-blue-500 text-2xl"></i>
+                <span class="font-bold text-xl text-gray-800">Academy crypto</span>
+            </div>
+            <nav class="hidden md:flex space-x-8">
+            </nav>
+            <button class="md:hidden text-gray-600">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="py-16 px-6">
+        <div class="container mx-auto max-w-6xl flex flex-col md:flex-row items-center">
+            <div class="md:w-1/2 mb-10 md:mb-0 md:pr-10">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4 leading-tight">
+                    Analisis Crypto <span class="text-blue-500">Mudah</span> dengan Satu Klik
+                </h1>
+                <p class="text-lg text-gray-600 mb-8">
+                    Academy crypto Scanner menganalisis token crypto di seluruh jaringan blockchain. Dapatkan wawasan mendalam dengan alat analisis berbasis AI kami.
+                </p>
+                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <button id="open-chatbot" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition flex items-center justify-center">
+                        <i class="fas fa-robot mr-2"></i> Try Academy crypto Scanner
+                    </button>
+                    <button id="open-trade-modal" class="border border-gray-300 text-gray-700 font-medium py-3 px-6 rounded-lg transition flex items-center justify-center hover:bg-gray-50">
+                        <i class="fas fa-exchange-alt mr-2"></i> Trade
+                    </button>
+                </div>
+            </div>
+            <div class="md:w-1/2">
+                <div class="bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex space-x-6">
+                            <button class="tab-btn active font-medium text-gray-800 px-4 py-2 rounded-lg transition" data-tab="market">
+                                <i class="fas fa-chart-line mr-2"></i>Market
+                            </button>
+                            <button class="tab-btn font-medium text-gray-500 hover:text-gray-800 px-4 py-2 rounded-lg transition" data-tab="cex">
+                                <i class="fas fa-exchange-alt mr-2"></i>CEX
+                            </button>
+                            <button class="tab-btn font-medium text-gray-500 hover:text-gray-800 px-4 py-2 rounded-lg transition" data-tab="dex">
+                                <i class="fas fa-code-branch mr-2"></i>DEX
+                            </button>
+                        </div>
+                        <span class="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
+                            <i class="fas fa-sync-alt mr-1"></i>
+                            <span id="update-time">Just now</span>
+                        </span>
+                    </div>
+
+                    <!-- Market Tab Content -->
+                    <div id="market-tab" class="tab-content active space-y-3">
+                        <div id="top-crypto-data" class="space-y-3">
+                            <div class="animate-pulse flex flex-col space-y-3">
+                                <div class="h-16 bg-gray-200 rounded-xl"></div>
+                                <div class="h-16 bg-gray-200 rounded-xl"></div>
+                                <div class="h-16 bg-gray-200 rounded-xl"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CEX Tab Content -->
+                    <div id="cex-tab" class="tab-content hidden">
+                        <div id="trending-cex-data" class="space-y-3">
+                            <div class="animate-pulse grid md:grid-cols-2 gap-4">
+                                <div class="h-24 bg-gray-200 rounded-xl"></div>
+                                <div class="h-24 bg-gray-200 rounded-xl"></div>
+                                <div class="h-24 bg-gray-200 rounded-xl"></div>
+                                <div class="h-24 bg-gray-200 rounded-xl"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DEX Tab Content -->
+                    <div id="dex-tab" class="tab-content hidden">
+                        <div id="trending-dex-data" class="space-y-3">
+                            <div class="animate-pulse grid md:grid-cols-2 gap-4">
+                                <div class="h-24 bg-gray-200 rounded-xl"></div>
+                                <div class="h-24 bg-gray-200 rounded-xl"></div>
+                                <div class="h-24 bg-gray-200 rounded-xl"></div>
+                                <div class="h-24 bg-gray-200 rounded-xl"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-16 px-6 bg-white">
+        <div class="container mx-auto max-w-6xl">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Fitur Unggulan</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-gray-50 p-6 rounded-xl">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-search-dollar text-blue-500 text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-2">Analisis Token</h3>
+                    <p class="text-gray-600">Analisis mendalam token crypto di berbagai blockchain dengan metrik komprehensif.</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-robot text-green-500 text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-2">Wawasan AI</h3>
+                    <p class="text-gray-600">Penjelasan berbasis AI untuk data crypto kompleks dalam bahasa yang mudah dipahami.</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl">
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-bolt text-purple-500 text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-xl text-gray-800 mb-2">Data Real-time</h3>
+                    <p class="text-gray-600">Selalu update dengan harga pasar terkini, tren, dan metrik on-chain.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trade Modal -->
+    <div id="trade-modal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-gray-900 bg-opacity-90">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
+            <div class="inline-block align-bottom rounded-xl text-left overflow-hidden transform transition-all w-full max-w-6xl">
+                <div class="relative">
+                    <button id="close-trade-modal" class="absolute top-4 right-4 z-50 text-white hover:text-gray-300 bg-gray-800 rounded-full p-1">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <iframe 
+                        id="uniswap-widget"
+                        src="https://app.uniswap.org/swap?outputCurrency=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48&theme=dark"
+                        frameBorder="0"
+                        width="100%"
+                        height="700px"
+                        title="Uniswap Widget"
+                        style="border-radius: 20px;"
+                        allow="clipboard-write"
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Modal -->
+    <div id="chatbot-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-500 opacity-75" id="chatbot-backdrop"></div>
+            </div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-t-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" style="border-radius: 20px 20px 0 0;">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">
+                            <i class="fas fa-robot text-blue-500 mr-2"></i> Academy crypto Scanner
+                        </h3>
+                        <button id="close-chatbot" class="text-gray-400 hover:text-gray-500">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="px-4 py-2 h-96 overflow-y-auto chatbot-bg">
+                    <div id="chat-messages" class="space-y-4">
+                        <div class="flex">
+                            <div class="message-bubble-assistant max-w-xs md:max-w-md p-4 w-full">
+                                <div class="whitespace-pre-wrap">Halo! Saya adalah Academy crypto Scanner. Saya dapat menganalisis token crypto di semua jaringan blockchain. Silahkan tanyakan tentang token atau proyek crypto yang ingin Anda analisis.</div>
+                                <div class="flex justify-between items-center mt-2">
+                                    <p class="text-xs text-gray-500">Baru saja</p>
+                                    <div class="flex space-x-2">
+                                        <button class="like-btn text-gray-400 hover:text-green-500" data-message-id="1">
+                                            <i class="far fa-thumbs-up"></i>
+                                        </button>
+                                        <button class="dislike-btn text-gray-400 hover:text-red-500" data-message-id="1">
+                                            <i class="far fa-thumbs-down"></i>
+                                        </button>
+                                        <button class="copy-btn text-gray-400 hover:text-blue-500" data-message-id="1">
+                                            <i class="far fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="message-end"></div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 flex items-center">
+                    <input id="chat-input" type="text" placeholder="Type your message..." class="flex-1 border border-gray-300 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <button id="send-button" class="ml-2 w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize data loading
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial fetch
+            fetchCryptoData();
+            
+            // Set up periodic updates every 30 seconds
+            setInterval(fetchCryptoData, 30000);
+            
+            // Initialize tabs
+            setupTabs();
+            
+            // ... rest of your existing DOMContentLoaded code ...
+        });
+
+        // Crypto data fetch 
+        async function fetchCryptoData() {
+            console.log('Fetching crypto data...');
+            try {
+                // Fetch top cryptocurrencies
+                const topResponse = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                    params: {
+                        vs_currency: 'usd',
+                        ids: 'bitcoin,ethereum,solana,binancecoin,cardano',
+                        order: 'market_cap_desc',
+                        sparkline: false,
+                        price_change_percentage: '1h'
+                    }
+                });
+
+                // Fetch trending coins from centralized exchanges (CEX)
+                const cexResponse = await axios.get('https://api.coingecko.com/api/v3/search/trending');
+                const cexCoins = cexResponse.data.coins.slice(0, 5).map(coin => coin.item);
+
+                // Fetch trending coins from DEX (using top gainers as proxy)
+                const dexResponse = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                    params: {
+                        vs_currency: 'usd',
+                        order: 'price_change_percentage_24h_desc',
+                        per_page: 5,
+                        page: 1,
+                        sparkline: false
+                    }
+                });
+
+                // Update displays
+                updateTopCryptoDisplay(topResponse.data);
+                updateTrendingDisplay(cexCoins, 'cex');
+                updateTrendingDisplay(dexResponse.data, 'dex');
+
+            } catch (error) {
+                console.error('Error fetching crypto data:', error);
+                // Fallback data
+                const fallbackTop = [
+                    { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', current_price: 56789.23, price_change_percentage_24h: 2.34 },
+                    { id: 'ethereum', symbol: 'eth', name: 'Ethereum', current_price: 3021.45, price_change_percentage_24h: -1.23 },
+                    { id: 'solana', symbol: 'sol', name: 'Solana', current_price: 145.67, price_change_percentage_24h: 5.67 }
+                ];
+                const fallbackCex = [
+                    { id: 'pepe', symbol: 'pepe', name: 'Pepe', price_btc: 0.00000001 },
+                    { id: 'floki', symbol: 'floki', name: 'FLOKI', price_btc: 0.00000002 },
+                    { id: 'bonk', symbol: 'bonk', name: 'Bonk', price_btc: 0.00000003 }
+                ];
+                const fallbackDex = [
+                    { id: 'jupiter', symbol: 'jup', name: 'Jupiter', current_price: 1.23, price_change_percentage_24h: 25.67 },
+                    { id: 'pyth', symbol: 'pyth', name: 'Pyth', current_price: 0.45, price_change_percentage_24h: 18.23 },
+                    { id: 'jito', symbol: 'jto', name: 'Jito', current_price: 3.21, price_change_percentage_24h: 15.89 }
+                ];
+
+                updateTopCryptoDisplay(fallbackTop);
+                updateTrendingDisplay(fallbackCex, 'cex');
+                updateTrendingDisplay(fallbackDex, 'dex');
+            }
+            
+            // Update time
+            document.getElementById('update-time').textContent = new Date().toLocaleTimeString();
+        }
+
+        // Tab functionality
+        function setupTabs() {
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Update active tab styling
+                    tabs.forEach(t => t.classList.remove('active', 'bg-blue-50', 'text-blue-600'));
+                    tabs.forEach(t => t.classList.add('text-gray-500'));
+                    tab.classList.add('active', 'bg-blue-50', 'text-blue-600');
+                    tab.classList.remove('text-gray-500');
+
+                    // Show the corresponding content
+                    const tabId = tab.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.add('hidden');
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+        }
+
+        function updateTopCryptoDisplay(data) {
+            const container = document.getElementById('top-crypto-data');
+            container.innerHTML = '';
+            
+            data.forEach(crypto => {
+                const changeColor = crypto.price_change_percentage_24h >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700';
+                const changeIcon = crypto.price_change_percentage_24h >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                const change24h = crypto.price_change_percentage_24h;
+                
+                const item = document.createElement('div');
+                item.className = 'flex items-center p-4 bg-white border border-gray-100 rounded-xl hover:shadow-sm transition';
+                item.innerHTML = `
+                    <div class="flex items-center flex-1 min-w-0">
+                        <div class="relative flex-shrink-0 mr-3">
+                            <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/${getIdForCoin(crypto.id)}.png" 
+                                alt="${crypto.name}" class="w-10 h-10 rounded-full">
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="font-semibold text-gray-800 truncate">${crypto.name}</h4>
+                            <p class="text-sm text-gray-500">${crypto.symbol.toUpperCase()}</p>
+                        </div>
+                    </div>
+                    <div class="ml-4 flex flex-col items-end">
+                        <p class="font-medium text-gray-800">${crypto.current_price.toLocaleString()}</p>
+                        <span class="text-xs ${changeColor} px-2 py-1 rounded-full inline-flex items-center mt-1">
+                            <i class="fas ${changeIcon} mr-1 text-xs"></i>
+                            ${Math.abs(change24h).toFixed(2)}%
+                        </span>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function updateTrendingDisplay(data, type) {
+            const container = document.getElementById(`trending-${type}-data`);
+            container.innerHTML = '';
+            
+            data.forEach((crypto, index) => {
+                const priceChange = type === 'cex' ? (Math.random() * 20 - 5) : (crypto.price_change_percentage_24h || Math.random() * 30 - 10);
+                const changeColor = priceChange >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700';
+                const changeIcon = priceChange >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                
+                const item = document.createElement('div');
+                item.className = 'bg-white border border-gray-100 rounded-xl p-4 hover:shadow-sm transition';
+                item.innerHTML = `
+                    <div class="flex items-center mb-2">
+                        <span class="text-xs font-medium text-blue-600 mr-2">#${index + 1}</span>
+                        <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/${getIdForCoin(crypto.id)}.png" 
+                            alt="${crypto.name}" class="w-6 h-6 rounded-full mr-2">
+                        <h4 class="font-semibold text-gray-800">${crypto.name}</h4>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-gray-500">Price</p>
+                            <p class="font-medium">
+                                ${type === 'cex' 
+                                    ? `${crypto.price_btc ? crypto.price_btc.toFixed(8) : '--'} BTC`
+                                    : `${crypto.current_price ? crypto.current_price.toFixed(4) : '--'}`}
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500">24h Change</p>
+                            <span class="text-xs ${changeColor} px-2 py-1 rounded-full inline-flex items-center">
+                                <i class="fas ${changeIcon} mr-1 text-xs"></i>
+                                ${Math.abs(priceChange).toFixed(2)}%
+                            </span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function getIdForCoin(coinId) {
+            // Map coin IDs to CoinMarketCap IDs
+            const idMap = {
+                'bitcoin': 1,
+                'ethereum': 1027,
+                'solana': 5426,
+                'cardano': 2010,
+                'binancecoin': 1839,
+                'pepe': 24478,
+                'floki': 14359,
+                'bonk': 22061,
+                'jupiter': 25898,
+                'pyth': 25896,
+                'jito': 25879,
+            };
+            return idMap[coinId] || 1;
+        }
+        
+        function addCryptoItem(container, symbol, data) {
+            const changeColor = data.change24h >= 0 ? 'text-green-500' : 'text-red-500';
+            const changeIcon = data.change24h >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+            
+            const item = document.createElement('div');
+            item.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+            item.innerHTML = `
+                <div class="flex items-center">
+                    <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/${
+                        symbol === 'btc' ? '1' : 
+                        symbol === 'eth' ? '1027' : 
+                        '5426' // SOL's ID
+                    }.png" alt="${data.name}" class="w-8 h-8 mr-3">
+                    <div>
+                        <h4 class="font-medium text-gray-800">${data.name}</h4>
+                        <span class="text-xs text-gray-500">${symbol.toUpperCase()}/USD</span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="font-medium text-gray-800">$${data.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p class="text-xs ${changeColor}">
+                        <i class="fas ${changeIcon} mr-1"></i>${Math.abs(data.change24h).toFixed(2)}%
+                    </p>
+                </div>
+            `;
+            container.appendChild(item);
+        }
+        
+        // Chatbot functionality
+        let messages = [
+            {
+                id: Date.now().toString(),
+                content: "Halo! Saya adalah Academy crypto Scanner. Saya dapat menganalisis token crypto di semua jaringan blockchain. Silahkan tanyakan tentang token atau proyek crypto yang ingin Anda analisis.",
+                role: "assistant",
+                timestamp: new Date()
+            }
+        ];
+        let isLoading = false;
+        
+        function scrollToBottom() {
+            const container = document.querySelector('.chatbot-bg');
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function addMessage(content, role) {
+            const newMessage = {
+                id: Date.now().toString(),
+                content: content,
+                role: role,
+                timestamp: new Date()
+            };
+            
+            messages.push(newMessage);
+            renderMessages();
+            scrollToBottom();
+            
+            return newMessage.id;
+        }
+        
+        function renderMessages() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+            
+            messages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'flex ' + (message.role === 'user' ? 'justify-end' : 'justify-start');
+                
+                let bubbleClass = message.role === 'user' ? 'message-bubble-user' : 'message-bubble-assistant';
+                
+                let contentHTML = message.content;
+                if (message.id === 'loading') {
+                    contentHTML = '<div class="pulsating-dots"><span></span><span></span><span></span></div>';
+                } else {
+                    // Format the message content with proper line breaks and spacing
+                    contentHTML = formatResponseText(contentHTML);
+                }
+                
+                const timeString = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                messageDiv.innerHTML = `
+                    <div class="${bubbleClass} max-w-xs md:max-w-md p-4">
+                        <div class="whitespace-pre-wrap">${contentHTML}</div>
+                        <div class="message-actions mt-2">
+                            ${message.role === 'assistant' && message.id !== 'loading' 
+                                ? `
+                                <div class="flex space-x-2 text-xs">
+                                    <span class="text-gray-500">${timeString}</span>
+                                    <span class="text-gray-400">•</span>
+                                    <button class="message-action like-btn text-gray-500 hover:text-green-500" data-message-id="${message.id}">
+                                        <i class="far fa-thumbs-up"></i>
+                                    </button>
+                                    <button class="message-action dislike-btn text-gray-500 hover:text-red-500" data-message-id="${message.id}">
+                                        <i class="far fa-thumbs-down"></i>
+                                    </button>
+                                    <button class="message-action copy-btn text-gray-500 hover:text-blue-500" data-message-id="${message.id}">
+                                        <i class="far fa-copy"></i> Salin
+                                    </button>
+                                </div>
+                                `
+                                : `<span class="text-xs ${message.role === 'user' ? 'text-blue-100' : 'text-gray-500'}">${timeString}</span>`
+                            }
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(messageDiv);
+            });
+        }
+        
+        async function handleSendMessage() {
+            const input = document.getElementById('chat-input');
+            const content = input.value.trim();
+            
+            if (isLoading || !content) return;
+            
+            // Add user message
+            addMessage(content, 'user');
+            
+            // Add loading indicator
+            messages.push({
+                id: 'loading',
+                content: '',
+                role: 'assistant',
+                timestamp: new Date()
+            });
+            renderMessages();
+            scrollToBottom();
+            
+            // Clear input
+            input.value = '';
+            isLoading = true;
+            
+            try {
+                console.log("Sending request to webhook:", content);
+                
+                const response = await fetch('https://sidang.app.n8n.cloud/webhook/2b90a4c0-b8cb-4991-b324-9c8412105707', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ query: content })
+                });
+                
+                console.log("Response status:", response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log("Received data from webhook:", data);
+                
+                // Handle the response - it's an array with objects containing output
+                let responseContent = "Maaf, tidak ada respons dari server.";
+                
+                if (Array.isArray(data) && data.length > 0 && data[0].output) {
+                    responseContent = data[0].output;
+                } else if (data.output) {
+                    // Fallback for direct object response
+                    responseContent = data.output;
+                }
+                
+                console.log("Processed response content:", responseContent);
+                
+                // Remove loading indicator
+                messages = messages.filter(msg => msg.id !== 'loading');
+                
+                // Add the assistant's response
+                addMessage(responseContent, 'assistant');
+                
+            } catch (error) {
+                console.error("Error fetching response:", error);
+                
+                // Remove loading indicator
+                messages = messages.filter(msg => msg.id !== 'loading');
+                
+                // Add error message as assistant response
+                addMessage("Maaf, terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi.", 'assistant');
+                
+            } finally {
+                isLoading = false;
+            }
+        }
+        
+        // Format response text with proper spacing and formatting
+        function formatResponseText(text) {
+            // Convert markdown-like formatting
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // bold
+                .replace(/\*(.*?)\*/g, '<em>$1</em>') // italic
+                .replace(/\n/g, '<br>') // new lines
+                .replace(/^•/gm, '•') // ensure bullet points
+                .replace(/^\s*-\s*(.*)/gm, '• $1'); // convert dashes to bullets
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch crypto data on load
+            fetchCryptoData();
+
+            // Chatbot modal controls
+            document.getElementById('open-chatbot').addEventListener('click', function() {
+                document.getElementById('chatbot-modal').classList.remove('hidden');
+            });
+            
+            document.getElementById('close-chatbot').addEventListener('click', function() {
+                document.getElementById('chatbot-modal').classList.add('hidden');
+            });
+            
+            document.getElementById('chatbot-backdrop').addEventListener('click', function() {
+                document.getElementById('chatbot-modal').classList.add('hidden');
+            });
+
+             // Chat input
+            document.getElementById('send-button').addEventListener('click', handleSendMessage);
+            
+            document.getElementById('chat-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleSendMessage();
+                }
+            });
+
+            // Initial render of messages
+            renderMessages();
+
+            // Add message actions (like, dislike, copy)
+            document.addEventListener('click', function (e) {
+            // LIKE BUTTON TOGGLE
+            if (e.target.closest('.like-btn')) {
+                const btn = e.target.closest('.like-btn');
+                const isActive = btn.classList.contains('liked');
+
+            // Reset dislike button
+                const parent = btn.parentElement;
+                const dislikeBtn = parent.querySelector('.dislike-btn');
+            if (dislikeBtn) {
+                dislikeBtn.innerHTML = '<i class="fas fa-thumbs-down text-gray-400"></i>';
+                dislikeBtn.classList.remove('disliked');
+            }
+
+            if (isActive) {
+            // Undo like
+                btn.innerHTML = '<i class="fas fa-thumbs-up text-gray-400"></i>';
+                btn.classList.remove('liked');
+            } else {
+            // Activate like
+                btn.innerHTML = '<i class="fas fa-thumbs-up text-green-500"></i>';
+                btn.classList.add('liked');
+            }
+            console.log('Liked message:', btn.dataset.messageId);
+            }
+
+            // DISLIKE BUTTON TOGGLE
+            if (e.target.closest('.dislike-btn')) {
+                const btn = e.target.closest('.dislike-btn');
+                const isActive = btn.classList.contains('disliked');
+
+            // Reset like button
+                const parent = btn.parentElement;
+                const likeBtn = parent.querySelector('.like-btn');
+            if (likeBtn) {
+                likeBtn.innerHTML = '<i class="fas fa-thumbs-up text-gray-400"></i>';
+                likeBtn.classList.remove('liked');
+            }
+
+            if (isActive) {
+            // Undo dislike
+                btn.innerHTML = '<i class="fas fa-thumbs-down text-gray-400"></i>';
+                btn.classList.remove('disliked');
+            } else {
+            // Activate dislike
+                btn.innerHTML = '<i class="fas fa-thumbs-down text-red-500"></i>';
+                btn.classList.add('disliked');
+            }
+            console.log('Disliked message:', btn.dataset.messageId);
+            }
+
+            // COPY BUTTON
+            if (e.target.closest('.copy-btn')) {
+                const messageId = e.target.closest('.copy-btn').dataset.messageId;
+                const message = messages.find((m) => m.id === messageId);
+
+            if (message) {
+                navigator.clipboard.writeText(message.content);
+                const tooltip = document.createElement('span');
+                tooltip.textContent = 'Tersalin!';
+                tooltip.className = 
+                'absolute bg-gray-800 text-white text-xs rounded px-2 py-1';
+
+                const btn = e.target.closest('.copy-btn');
+                btn.appendChild(tooltip);
+
+                setTimeout(() => tooltip.remove(), 2000);
+                }
+            }
+        });
+
+            // Trade modal controls
+            document.getElementById('open-trade-modal').addEventListener('click', function() {
+                document.getElementById('trade-modal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            });
+            
+            document.getElementById('close-trade-modal').addEventListener('click', function() {
+                document.getElementById('trade-modal').classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            });
+            
+            document.getElementById('trade-backdrop').addEventListener('click', function() {
+                document.getElementById('trade-modal').classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            });
+            
+            // Helper function to format response text
+            function formatResponseText(text) {
+                // Convert markdown-like formatting to HTML
+                return text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // bold
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>') // italic
+                    .replace(/\n/g, '<br>') // new lines
+                    .replace(/- (.*?)(<br>|$)/g, '• $1$2'); // bullet points
+            }
+        });
+    </script>
+</body>
+</html>
